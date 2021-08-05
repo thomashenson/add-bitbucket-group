@@ -1,4 +1,4 @@
-# Add a Group to a Bitbucket Repository #
+# Add a Group to a Multiple Bitbucket Repositories #
 
 A script to bulk-add a group to Bitbucket repositories.
 
