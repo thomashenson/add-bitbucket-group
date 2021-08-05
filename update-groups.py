@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import requests
+import json
 
 class FixGroups:
     """
@@ -34,17 +35,33 @@ class FixGroups:
         Attaches the specified group to the specified repo. If no repo is specified,
         the group will be added to all repos in the workspace
     """
-    def __init__(self, user, password, workspace_id, repo_slug, group_owner, group_slug, privilege):
-        self.user = user
-        self.password = password
-        self.workspace_id = workspace_id
-        self.repo_slug = repo_slug
-        self.group_owner = group_owner
-        self.group_slug = group_slug
-        self.privilege = privilege
+    def __init__(self):
+        try:
+            file_name = "/app/vars.json"
+            var_file = open(file_name)
+            vars = json.load(var_file)
 
-        if not self.group_owner:
-            self.group_owner == self.workspace_id
+            self.user = vars["username"]
+            self.password = vars["password"]
+            self.workspace_id = vars["workspace_id"]
+            self.repo_slug = vars["repo_slug"]
+            self.group_owner = vars["group_owner"]
+            self.group_slug = vars["group_slug"]
+            self.privilege = vars["privilege"]
+
+            if not self.group_owner:
+                self.group_owner = vars["workspace_id"]
+
+            var_file.close()
+        except FileNotFoundError as err:
+            print(f"File {file_name} not found.  Aborting")
+            raise SystemExit(err)
+        except OSError as err:
+            print(f"OS error occurred trying to open {file_name}")
+            raise SystemExit(err)
+        except Exception as err:
+            print(f"Unexpected error opening {file_name} is",repr(err))
+            raise SystemExit(err)
         
     def get_repos(self):
         repo_slugs = []
@@ -68,7 +85,6 @@ class FixGroups:
         except requests.exceptions.RequestException as err:
             raise SystemExit(err)
 
-        print(repo_slugs)
         return repo_slugs
 
     def update_groups(self):
@@ -87,21 +103,15 @@ class FixGroups:
                 content = r.content.decode('utf-8')
                 if "Your credentials lack one or more required privilege scopes." in content:
                     print(content)
+                elif "error" in content:
+                    print(content)
                 else:
                     print(f'{self.group_slug} added to {self.repo_slug}.')
         except requests.exceptions.RequestException as err:
             raise SystemExit(err)
 
 def main():
-    user = input("Username: ")
-    password = input("Password: ")
-    workspace_id = input("Workspace ID: ")
-    repo_slug = input("Repository Slug (leave blank for all repositories): ")
-    group_owner = input("Group Owner (leave blank if same as Workspace ID): ")
-    group_slug = input("Group Slug: ")
-    privilege = input("Privilege (read, write, admin): ")
-
-    groups = FixGroups(user, password, workspace_id, repo_slug, group_owner, group_slug, privilege)
+    groups = FixGroups()
     groups.update_groups()
 
 if __name__ == "__main__":
