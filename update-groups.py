@@ -79,7 +79,7 @@ class FixGroups:
                     break
 
                 for repo in output['values']:
-                    repo_slugs.append(repo['name'])
+                    repo_slugs.append(repo['slug'])
 
                 page += 1
         except requests.exceptions.RequestException as err:
@@ -94,7 +94,9 @@ class FixGroups:
                 for repo in repos:
                     r = requests.put(f'https://api.bitbucket.org/1.0/group-privileges/{self.workspace_id}/{repo}/{self.group_owner}/{self.group_slug}', auth=(self.user, self.password), data=f"{self.privilege}")
                     content = r.content.decode('utf-8')
-                    if "Your credentials lack one or more required privilege scopes." in content:
+
+                    if not f'"slug": "{self.group_slug}"' in content:
+                        print(f'{self.group_slug} could not be added to {repo}:')
                         print(content)
                     else:
                         print(f'{self.group_slug} added to {repo}.')
